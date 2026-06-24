@@ -2,23 +2,29 @@ import AppKit
 
 enum StatusMenuBuilder {
     static func build(
+        always: [RuleConfig],
+        manual: [RuleConfig],
         snoozeState: SnoozeState,
-        onApply: @escaping () -> Void,
+        onApply: @escaping (RuleConfig) -> Void,
         onSnooze: @escaping (SnoozeOption) -> Void,
         onQuit: @escaping () -> Void
     ) -> NSMenu {
         let menu = NSMenu()
 
-        let hasJSON = ClipboardMonitor.currentStringValue()
-            .flatMap { JSONFormatter.format($0) } != nil
-
         if case .off = snoozeState {
             menu.addItem(header("clipfmt is off"))
-        } else if case .snoozed(let option, let skipped) = snoozeState {
+        } else if case .snoozed(_, let skipped) = snoozeState {
             let label = skipped > 0 ? "Snoozed — \(skipped) skipped" : "Snoozed"
             menu.addItem(header(label))
-        } else if hasJSON {
-            menu.addItem(actionItem(title: "Format JSON", action: onApply))
+        } else if always.count > 1 {
+            menu.addItem(header("\(always.count) auto rules matched — pick one"))
+            for rule in always {
+                menu.addItem(actionItem(title: rule.name, action: { onApply(rule) }))
+            }
+        } else if !always.isEmpty || !manual.isEmpty {
+            for rule in always + manual {
+                menu.addItem(actionItem(title: rule.name, action: { onApply(rule) }))
+            }
         } else {
             menu.addItem(header("Nothing to format"))
         }

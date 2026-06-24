@@ -1,0 +1,6 @@
+[[rule]]
+name = "Format JSON"
+match = "is_valid_json"
+steps = ["format_json"]
+when = "always"
+

@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7BAD56BA2FEB9681004DE1F7 /* TOMLKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7BAD56B92FEB9681004DE1F7 /* TOMLKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		7BAD56992FEB8D67004DE1F7 /* cliptool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cliptool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7BAD56BA2FEB9681004DE1F7 /* TOMLKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = cliptool;
 			packageProductDependencies = (
+				7BAD56B92FEB9681004DE1F7 /* TOMLKit */,
 			);
 			productName = cliptool;
 			productReference = 7BAD56992FEB8D67004DE1F7 /* cliptool.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 7BAD56902FEB8D67004DE1F7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7BAD56B82FEB9681004DE1F7 /* XCRemoteSwiftPackageReference "TOMLKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7BAD569A2FEB8D67004DE1F7 /* Products */;
 			projectDirPath = "";
@@ -267,10 +276,9 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9D685X4E44;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = cliptool/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -300,10 +308,9 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9D685X4E44;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = cliptool/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -346,6 +353,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7BAD56B82FEB9681004DE1F7 /* XCRemoteSwiftPackageReference "TOMLKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/LebJe/TOMLKit";
+			requirement = {
+				kind = exactVersion;
+				version = 0.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7BAD56B92FEB9681004DE1F7 /* TOMLKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7BAD56B82FEB9681004DE1F7 /* XCRemoteSwiftPackageReference "TOMLKit" */;
+			productName = TOMLKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7BAD56912FEB8D67004DE1F7 /* Project object */;
 }

@@ -5,6 +5,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var monitor: ClipboardMonitor!
     private var snoozeState: SnoozeState = .active
     private var cachedMenu: NSMenu?
+    private var configWatcher: ConfigWatcher!
+    private var rules: [RuleConfig] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -16,6 +18,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.clipboardDidChange()
         }
         updateIcon()
+        configWatcher = ConfigWatcher { [weak self] rules in
+            self?.rules = rules
+            self?.clipboardDidChange()
+        }
+        configWatcher.start()
         monitor.start()
         cachedMenu = buildMenu()
     }
@@ -27,10 +34,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if event.type == .rightMouseUp {
             showMenu(cachedMenu ?? buildMenu())
         } else {
-            let hasJSON = ClipboardMonitor.currentStringValue()
-                .flatMap { JSONFormatter.format($0) } != nil
-            if hasJSON && snoozeState.isActive {
-                applyTransform()
+            let input = ClipboardMonitor.currentStringValue() ?? ""
+            let (always, _) = RuleEngine.evaluate(rules, input: input)
+            if always.count == 1 && snoozeState.isActive {
+                if let output = RuleEngine.apply(always[0], input: input) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(output, forType: .string)
+                    updateIcon()
+                }
             } else {
                 showMenu(cachedMenu ?? buildMenu())
             }
@@ -49,37 +60,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             snoozeState.recordSkip()
             return
         }
-        let hasJSON = ClipboardMonitor.currentStringValue()
-            .flatMap { JSONFormatter.format($0) } != nil
-        cachedMenu = hasJSON ? nil : buildMenu()
+        let input = ClipboardMonitor.currentStringValue() ?? ""
+        let (always, manual) = RuleEngine.evaluate(rules, input: input)
+        cachedMenu = always.count == 1 ? nil : buildMenu()
         updateIcon()
     }
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        let hasJSON = ClipboardMonitor.currentStringValue()
-            .flatMap { JSONFormatter.format($0) } != nil
-        button.image = NSImage(systemSymbolName: hasJSON ? "doc.badge.arrow.up" : "doc", accessibilityDescription: nil)
+        let input = ClipboardMonitor.currentStringValue() ?? ""
+        let (always, manual) = RuleEngine.evaluate(rules, input: input)
+        let hasMatch = !always.isEmpty || !manual.isEmpty
+        button.image = NSImage(systemSymbolName: hasMatch ? "doc.badge.arrow.up" : "doc", accessibilityDescription: nil)
     }
 
     private func buildMenu() -> NSMenu {
-        StatusMenuBuilder.build(
+        let input = ClipboardMonitor.currentStringValue() ?? ""
+        let (always, manual) = RuleEngine.evaluate(rules, input: input)
+        return StatusMenuBuilder.build(
+            always: always,
+            manual: manual,
             snoozeState: snoozeState,
-            onApply: { [weak self] in self?.applyTransform() },
-            onSnooze: { [weak self] option in self?.applySnoze(option) },
+            onApply: { [weak self] rule in
+                guard let input = ClipboardMonitor.currentStringValue(),
+                      let output = RuleEngine.apply(rule, input: input) else { return }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(output, forType: .string)
+                self?.updateIcon()
+            },
+            onSnooze: { [weak self] option in self?.applySnooze(option) },
             onQuit: { NSApp.terminate(nil) }
         )
     }
 
-    private func applyTransform() {
-        guard let input = ClipboardMonitor.currentStringValue(),
-              let output = JSONFormatter.format(input) else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(output, forType: .string)
-        updateIcon()
-    }
-
-    private func applySnoze(_ option: SnoozeOption) {
+    private func applySnooze(_ option: SnoozeOption) {
         switch option {
         case .minutes(let n) where n == 0:
             snoozeState = .active
@@ -98,10 +112,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate: NSMenuDelegate {
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        statusItem.menu = buildMenu()
-    }
-    
     func menuDidClose(_ menu: NSMenu) {
         statusItem.menu = nil
     }
