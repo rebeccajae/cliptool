@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7B814FF22FEBA8DA00561B5E /* JanetKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7B814FF12FEBA8DA00561B5E /* JanetKit */; };
 		7BAD56BA2FEB9681004DE1F7 /* TOMLKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7BAD56B92FEB9681004DE1F7 /* TOMLKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7B814FDE2FEBA5EE00561B5E /* JanetKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = JanetKit; sourceTree = "<group>"; };
 		7BAD56992FEB8D67004DE1F7 /* cliptool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cliptool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -40,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7B814FF22FEBA8DA00561B5E /* JanetKit in Frameworks */,
 				7BAD56BA2FEB9681004DE1F7 /* TOMLKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -47,11 +50,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7B814FF02FEBA8DA00561B5E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		7BAD56902FEB8D67004DE1F7 = {
 			isa = PBXGroup;
 			children = (
 				7BAD569B2FEB8D67004DE1F7 /* cliptool */,
 				7BAD569A2FEB8D67004DE1F7 /* Products */,
+				7B814FDE2FEBA5EE00561B5E /* JanetKit */,
+				7B814FF02FEBA8DA00561B5E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -84,6 +96,7 @@
 			name = cliptool;
 			packageProductDependencies = (
 				7BAD56B92FEB9681004DE1F7 /* TOMLKit */,
+				7B814FF12FEBA8DA00561B5E /* JanetKit */,
 			);
 			productName = cliptool;
 			productReference = 7BAD56992FEB8D67004DE1F7 /* cliptool.app */;
@@ -366,6 +379,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		7B814FF12FEBA8DA00561B5E /* JanetKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JanetKit;
+		};
 		7BAD56B92FEB9681004DE1F7 /* TOMLKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7BAD56B82FEB9681004DE1F7 /* XCRemoteSwiftPackageReference "TOMLKit" */;

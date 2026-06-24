@@ -1,0 +1,6 @@
+[[rule]]
+name = "Format JSON"
+match = { janet = "(json/valid? input)" }
+steps = [{ janet = "(json/pretty input)" }]
+when = "always"
+
