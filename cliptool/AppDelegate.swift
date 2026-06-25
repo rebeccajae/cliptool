@@ -13,6 +13,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastError: String?
     // Guards against the performClick menu-show idiom re-entering handleClick.
     private var isShowingMenu = false
+    /// Cancellable so a re-snooze (e.g. 5m → 30m) doesn't leave a stale
+    /// timer that prematurely wakes the app.
+    private var snoozeWorkItem: DispatchWorkItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -110,12 +113,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func applySnooze(_ option: SnoozeOption) {
+        snoozeWorkItem?.cancel()
+        snoozeWorkItem = nil
         switch option {
         case .resume:
             snoozeState = .active
         case .minutes(let n):
             snoozeState = .snoozed(option, skipped: 0)
-            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(n * 60)) { [weak self] in
+            let workItem = DispatchWorkItem { [weak self] in
                 guard let self, case .snoozed = self.snoozeState else { return }
                 self.snoozeState = .active
                 // The clipboard may have changed while we were snoozed (those
@@ -123,6 +128,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.evaluateRules()
                 self.renderIcon()
             }
+            snoozeWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(n * 60), execute: workItem)
         case .off:
             snoozeState = .off
         }
