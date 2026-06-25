@@ -2,10 +2,10 @@ import AppKit
 
 enum StatusMenuBuilder {
     static func build(
-        always: [RuleConfig],
-        manual: [RuleConfig],
+        always: [RegisteredRule],
+        manual: [RegisteredRule],
         snoozeState: SnoozeState,
-        onApply: @escaping (RuleConfig) -> Void,
+        onApply: @escaping (RegisteredRule) -> Void,
         onSnooze: @escaping (SnoozeOption) -> Void,
         onQuit: @escaping () -> Void
     ) -> NSMenu {

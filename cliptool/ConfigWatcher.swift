@@ -1,13 +1,17 @@
 import Foundation
+import JanetKit
 
 class ConfigWatcher {
     private let path: String
     private var source: DispatchSourceFileSystemObject?
-    private let onChange: ([RuleConfig]) -> Void
+    private let onChange: ([RegisteredRule]) -> Void
+    private let janet: JanetVM
 
-    init(path: String = ("~/.config/clipfmt/rules.toml" as NSString).expandingTildeInPath,
-         onChange: @escaping ([RuleConfig]) -> Void) {
+    init(path: String = ("~/.config/clipfmt/config.janet" as NSString).expandingTildeInPath,
+         janet: JanetVM,
+         onChange: @escaping ([RegisteredRule]) -> Void) {
         self.path = path
+        self.janet = janet
         self.onChange = onChange
     }
 
@@ -33,8 +37,10 @@ class ConfigWatcher {
 
     private func load() {
         do {
-            let rules = try RuleConfig.load(from: path)
-            onChange(rules)
+            let source = try String(contentsOfFile: path, encoding: .utf8)
+            RuleStorage.rules = []
+            _ = try janet.eval(source: source)
+            onChange(RuleStorage.rules)
         } catch {
             print("clipfmt: failed to load config: \(error)")
         }

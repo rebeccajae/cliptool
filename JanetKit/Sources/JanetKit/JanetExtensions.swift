@@ -32,3 +32,48 @@ func swiftJsonPretty(argc: Int32, argv: UnsafePointer<Janet>) -> Janet {
     return janet_wrap_string(janetStr)
 }
 
+@_cdecl("swift_xml_valid")
+func swiftXmlValid(argc: Int32, argv: UnsafePointer<Janet>) -> Janet {
+    guard argc == 1,
+          let ptr = janet_unwrap_string(argv[0]) else {
+        return janet_wrap_boolean(0)
+    }
+    let str = String(cString: ptr)
+    guard let data = str.data(using: .utf8),
+          (try? XMLDocument(data: data)) != nil else {
+        return janet_wrap_boolean(0)
+    }
+    return janet_wrap_boolean(1)
+}
+
+@_cdecl("swift_xml_pretty")
+func swiftXmlPretty(argc: Int32, argv: UnsafePointer<Janet>) -> Janet {
+    guard argc == 1,
+          let ptr = janet_unwrap_string(argv[0]) else {
+        return janet_wrap_nil()
+    }
+    let str = String(cString: ptr)
+    guard let data = str.data(using: .utf8),
+          let xml = try? XMLDocument(data: data) else {
+        return janet_wrap_nil()
+    }
+    let pretty = xml.xmlString(options: [.nodePrettyPrint])
+    let janetStr = pretty.withCString { janet_cstring($0) }
+    return janet_wrap_string(janetStr)
+}
+
+@_cdecl("swift_base64_decode")
+func swiftBase64Decode(argc: Int32, argv: UnsafePointer<Janet>) -> Janet {
+    guard argc == 1,
+          let ptr = janet_unwrap_string(argv[0]) else {
+        return janet_wrap_nil()
+    }
+    let str = String(cString: ptr)
+    guard let data = Data(base64Encoded: str),
+          let result = String(data: data, encoding: .utf8) else {
+        return janet_wrap_nil()
+    }
+    let janetStr = result.withCString { janet_cstring($0) }
+    return janet_wrap_string(janetStr)
+}
+
