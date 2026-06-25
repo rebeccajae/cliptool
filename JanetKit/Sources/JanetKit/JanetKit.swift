@@ -8,7 +8,7 @@ public enum JanetError: Error {
     case unexpectedReturnType
 }
 
-public final class JanetVM {
+public final class JanetVM: @unchecked Sendable {
     private let callEnv: UnsafeMutablePointer<JanetTable>
 
     public init() throws {
@@ -21,6 +21,8 @@ public final class JanetVM {
         janet_deinit()
     }
 
+    /// Evaluate source in a fresh environment (used for config loading — isolates
+    /// each reload so stale definitions don't leak across config changes).
     public func eval(source: String) throws -> Janet {
         let env = janet_core_env(nil)
         janet_register_extensions(env)

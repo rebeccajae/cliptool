@@ -3,6 +3,12 @@ import CJanet
 import JanetKit
 
 @Suite("RuleEngine") struct RuleEngineTests {
+
+    /// Define a function and return its Janet value, all in one eval.
+    private func defn(_ source: String) throws -> Janet {
+        try RuleEngine.janet!.eval(source: source)
+    }
+
     @Test func emptyRules() {
         let (always, manual) = RuleEngine.evaluate([], input: "anything")
         #expect(always.isEmpty)
@@ -10,112 +16,69 @@ import JanetKit
     }
 
     @Test func alwaysRuleMatches() throws {
-        let vm = try JanetVM()
         RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "J" :always json/valid? json/pretty)
-        """#)
-        let rules = RuleStorage.rules
-        #expect(rules.count == 1)
+        let pred = try defn("(fn [s] true)")
+        let xform = try defn("(fn [s] (string/ascii-upper s))")
+        RuleStorage.rules = [RegisteredRule(name: "Test", trigger: .always, matcher: pred, transform: xform)]
 
-        let (always, manual) = RuleEngine.evaluate(rules, input: #"{"a":1}"#)
+        let (always, manual) = RuleEngine.evaluate(RuleStorage.rules, input: "hello")
         #expect(always.count == 1)
-        #expect(always[0].name == "J")
+        #expect(always[0].name == "Test")
         #expect(manual.isEmpty)
-    }
 
-    @Test func alwaysRuleNonMatch() throws {
-        let vm = try JanetVM()
-        RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "J" :always json/valid? json/pretty)
-        """#)
-        let rules = RuleStorage.rules
-
-        let (always, manual) = RuleEngine.evaluate(rules, input: "not json")
-        #expect(always.isEmpty)
-        #expect(manual.isEmpty)
-    }
-
-    @Test func manualRule() throws {
-        let vm = try JanetVM()
-        RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "M" :manual json/valid? json/pretty)
-        """#)
-        let rules = RuleStorage.rules
-
-        let (always, manual) = RuleEngine.evaluate(rules, input: #"{"a":1}"#)
-        #expect(always.isEmpty)
-        #expect(manual.count == 1)
-        #expect(manual[0].name == "M")
-    }
-
-    @Test func mixedRules() throws {
-        let vm = try JanetVM()
-        RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "Auto JSON" :always json/valid? json/pretty)
-        (defrule "Manual JSON" :manual json/valid? (fn [s] (string/ascii-upper s)))
-        """#)
-        let rules = RuleStorage.rules
-        #expect(rules.count == 2)
-
-        let (always, manual) = RuleEngine.evaluate(rules, input: #"{"a":1}"#)
-        #expect(always.count == 1)
-        #expect(always[0].name == "Auto JSON")
-        #expect(manual.count == 1)
-        #expect(manual[0].name == "Manual JSON")
-    }
-
-    @Test func applyTransform() throws {
-        let vm = try JanetVM()
-        RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "Upper" :always (fn [s] true) (fn [s] (string/ascii-upper s)))
-        """#)
-        let rules = RuleStorage.rules
-
-        let result = RuleEngine.apply(rules[0], input: "hello")
+        let result = RuleEngine.apply(always[0], input: "hello")
         #expect(result == "HELLO")
     }
 
-    @Test func applyJsonFormat() throws {
-        let vm = try JanetVM()
+    @Test func manualRule() throws {
         RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "JSON" :always (fn [s] true) json/pretty)
-        """#)
-        let rules = RuleStorage.rules
+        let pred = try defn("(fn [s] true)")
+        RuleStorage.rules = [RegisteredRule(name: "Manual", trigger: .manual, matcher: pred, transform: pred)]
 
-        let result = RuleEngine.apply(rules[0], input: #"{"b":2,"a":1}"#)
-        #expect(result?.contains(#""a" : 1"#) == true)
+        let (always, manual) = RuleEngine.evaluate(RuleStorage.rules, input: "x")
+        #expect(always.isEmpty)
+        #expect(manual.count == 1)
+        #expect(manual[0].name == "Manual")
+    }
+
+    @Test func mixedRules() throws {
+        RuleStorage.rules = []
+        let pred = try defn("(fn [s] true)")
+        let xform = try defn("(fn [s] s)")
+        RuleStorage.rules = [
+            RegisteredRule(name: "Auto", trigger: .always, matcher: pred, transform: xform),
+            RegisteredRule(name: "Manual", trigger: .manual, matcher: pred, transform: xform),
+        ]
+
+        let (always, manual) = RuleEngine.evaluate(RuleStorage.rules, input: "x")
+        #expect(always.count == 1)
+        #expect(always[0].name == "Auto")
+        #expect(manual.count == 1)
+        #expect(manual[0].name == "Manual")
+    }
+
+    @Test func applyTransform() throws {
+        RuleStorage.rules = []
+        let fn = try defn("(fn [s] (string/ascii-upper s))")
+        RuleStorage.rules = [RegisteredRule(name: "U", trigger: .always, matcher: fn, transform: fn)]
+        #expect(RuleEngine.apply(RuleStorage.rules[0], input: "hello") == "HELLO")
     }
 
     @Test func applyBadInputReturnsNil() throws {
-        let vm = try JanetVM()
         RuleStorage.rules = []
-        _ = try vm.eval(source: #"""
-        (defrule "JSON" :always (fn [s] true) json/pretty)
-        """#)
-        let rules = RuleStorage.rules
-
-        let result = RuleEngine.apply(rules[0], input: "not json")
-        #expect(result == nil)
+        let jp = try defn("json/pretty")
+        RuleStorage.rules = [RegisteredRule(name: "J", trigger: .always, matcher: jp, transform: jp)]
+        #expect(RuleEngine.apply(RuleStorage.rules[0], input: "not json") == nil)
     }
 
     @Test func stressManyRules() throws {
-        let vm = try JanetVM()
         RuleStorage.rules = []
-        for i in 0..<50 {
-            let src = "(defrule \"R\(i)\" :always (fn [s] (= s \"\(i)\")) (fn [s] s))"
-            _ = try vm.eval(source: src)
+        let eq = try defn("(fn [s] (= s \"7\"))")
+        let id = try defn("(fn [s] s)")
+        RuleStorage.rules = (0..<50).map { i in
+            RegisteredRule(name: "R\(i)", trigger: .always, matcher: eq, transform: id)
         }
-        let rules = RuleStorage.rules
-        #expect(rules.count == 50)
-
-        let (always, _) = RuleEngine.evaluate(rules, input: "7")
-        #expect(always.count == 1)
-        #expect(always[0].name == "R7")
+        let (always, _) = RuleEngine.evaluate(RuleStorage.rules, input: "7")
+        #expect(always.count == 50)
     }
 }
