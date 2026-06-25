@@ -9,8 +9,12 @@ public enum JanetError: Error {
 }
 
 public final class JanetVM {
+    private let callEnv: UnsafeMutablePointer<JanetTable>
+
     public init() throws {
         janet_init()
+        callEnv = janet_core_env(nil)
+        janet_register_extensions(callEnv)
     }
 
     deinit {
@@ -28,13 +32,12 @@ public final class JanetVM {
         return result
     }
 
+    /// Call a Janet function value with a single string argument.
     public func callWithString(_ fn: Janet, input: String) throws -> Janet {
-        let env = janet_core_env(nil)
-        janet_register_extensions(env)
-        janet_def(env, "_fn", fn, nil)
-        let src = "(_fn \(quotedJanet(input)))"
+        janet_def(callEnv, "_cfn", fn, nil)
+        let src = "(_cfn \(quotedJanet(input)))"
         var result = Janet()
-        let status = janet_dostring(env, src, "call", &result)
+        let status = janet_dostring(callEnv, src, "call", &result)
         guard status == JANET_SIGNAL_OK.rawValue else {
             throw JanetError.runFailed("function call")
         }
