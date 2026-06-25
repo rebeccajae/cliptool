@@ -17,11 +17,15 @@ let package = Package(
                 "Tests/CliptoolTests/RuleEngineTests.swift",
                 "Tests/CliptoolTests/SnoozeStateTests.swift",
                 "Tests/CliptoolTests/ConfigMigratorTests.swift",
+                "Tests/CliptoolTests/ConfigWatcherTests.swift",
+                "Tests/CliptoolTests/StatusMenuBuilderTests.swift",
                 "cliptool/RuleEngine.swift",
                 "cliptool/RuleConfig.swift",
                 "cliptool/JanetBridge.swift",
                 "cliptool/SnoozeState.swift",
                 "cliptool/ConfigMigrator.swift",
+                "cliptool/ConfigWatcher.swift",
+                "cliptool/StatusMenuBuilder.swift",
             ]
         ),
     ]

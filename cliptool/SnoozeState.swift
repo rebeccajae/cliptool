@@ -1,11 +1,15 @@
 import Foundation
 
 enum SnoozeOption {
+    /// Resume immediately. Distinct from `minutes` so a zero duration isn't
+    /// overloaded with a different meaning.
+    case resume
     case minutes(Int)
     case off
 
     var label: String {
         switch self {
+        case .resume: return "Resume"
         case .minutes(let n): return "Pause for \(n)m"
         case .off: return "Turn off"
         }
@@ -13,6 +17,7 @@ enum SnoozeOption {
 
     var interval: TimeInterval? {
         switch self {
+        case .resume: return 0
         case .minutes(let n): return TimeInterval(n * 60)
         case .off: return nil
         }

@@ -5,11 +5,17 @@ enum StatusMenuBuilder {
         always: [RegisteredRule],
         manual: [RegisteredRule],
         snoozeState: SnoozeState,
+        error: String? = nil,
         onApply: @escaping (RegisteredRule) -> Void,
         onSnooze: @escaping (SnoozeOption) -> Void,
         onQuit: @escaping () -> Void
     ) -> NSMenu {
         let menu = NSMenu()
+
+        if let error {
+            menu.addItem(header("⚠ Config error: \(error)"))
+            menu.addItem(.separator())
+        }
 
         if case .off = snoozeState {
             menu.addItem(header("clipfmt is off"))
@@ -20,6 +26,13 @@ enum StatusMenuBuilder {
             menu.addItem(header("\(always.count) auto rules matched — pick one"))
             for rule in always {
                 menu.addItem(actionItem(title: rule.name, action: { onApply(rule) }))
+            }
+            if !manual.isEmpty {
+                menu.addItem(.separator())
+                menu.addItem(header("Manual"))
+                for rule in manual {
+                    menu.addItem(actionItem(title: rule.name, action: { onApply(rule) }))
+                }
             }
         } else if !always.isEmpty || !manual.isEmpty {
             for rule in always + manual {
@@ -40,7 +53,7 @@ enum StatusMenuBuilder {
             snoozeItem.submenu = snoozeMenu
             menu.addItem(snoozeItem)
         } else {
-            menu.addItem(actionItem(title: "Resume", action: { onSnooze(.minutes(0)) }))
+            menu.addItem(actionItem(title: SnoozeOption.resume.label, action: { onSnooze(.resume) }))
         }
 
         menu.addItem(.separator())

@@ -1,11 +1,9 @@
 #include "janet.h"
 
-// Forward declarations of Swift functions
-extern Janet swift_json_valid(int32_t argc, Janet *argv);
-extern Janet swift_json_pretty(int32_t argc, Janet *argv);
-extern Janet swift_xml_valid(int32_t argc, Janet *argv);
-extern Janet swift_xml_pretty(int32_t argc, Janet *argv);
-extern Janet swift_base64_decode(int32_t argc, Janet *argv);
+// `defrule` is implemented in C because it needs to root the matcher/transform
+// values and call back into Swift's RuleStorage. The JSON/XML/base64 helpers
+// are implemented in Swift (JanetExtensions.swift) and registered from Swift so
+// the Swift compiler retains their `@_cdecl` symbols in Release builds.
 extern void clipfmt_add_rule(int32_t mode, const char *name, Janet predicate, Janet transform);
 
 static Janet defrule_cfun(int32_t argc, Janet *argv) {
@@ -21,20 +19,14 @@ static Janet defrule_cfun(int32_t argc, Janet *argv) {
     return janet_wrap_nil();
 }
 
-static const JanetReg cfuns[] = {
-    {"json/valid?", swift_json_valid, "(json/valid? str)\n\nReturns true if str is valid JSON."},
-    {"json/pretty", swift_json_pretty, "(json/pretty str)\n\nReturns pretty-printed JSON string."},
-    {"xml/valid?", swift_xml_valid, "(xml/valid? str)\n\nReturns true if str is valid XML."},
-    {"xml/pretty", swift_xml_pretty, "(xml/pretty str)\n\nReturns pretty-printed XML string."},
-    {"base64/decode", swift_base64_decode, "(base64/decode str)\n\nBase64-decodes str and returns the decoded UTF-8 string."},
-    {"defrule", defrule_cfun,
-     "(defrule name :always|:manual matcher transform)\n\n"
-     "Register a clipboard formatting rule. matcher receives the clipboard string\n"
-     "as its argument and returns truthy if the rule applies. transform receives\n"
-     "the clipboard string and returns the transformed string."},
-    {NULL, NULL, NULL}
-};
-
-void janet_register_extensions(JanetTable *env) {
+void clipfmt_defrule_cfun(JanetTable *env) {
+    JanetReg cfuns[] = {
+        {"defrule", defrule_cfun,
+         "(defrule name :always|:manual matcher transform)\n\n"
+         "Register a clipboard formatting rule. matcher receives the clipboard string\n"
+         "as its argument and returns truthy if the rule applies. transform receives\n"
+         "the clipboard string and returns the transformed string."},
+        {NULL, NULL, NULL}
+    };
     janet_cfuns(env, NULL, cfuns);
 }

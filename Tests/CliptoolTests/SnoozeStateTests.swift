@@ -40,14 +40,15 @@ import Foundation
     }
 
     @Test func snoozeOptionLabels() {
+        #expect(SnoozeOption.resume.label == "Resume")
         #expect(SnoozeOption.minutes(5).label == "Pause for 5m")
         #expect(SnoozeOption.minutes(30).label == "Pause for 30m")
         #expect(SnoozeOption.off.label == "Turn off")
     }
 
     @Test func snoozeOptionIntervals() {
+        #expect(SnoozeOption.resume.interval == 0)
         #expect(SnoozeOption.minutes(5).interval == 300)
-        #expect(SnoozeOption.minutes(0).interval == 0)
         #expect(SnoozeOption.off.interval == nil)
     }
 }

@@ -1,5 +1,7 @@
 import Foundation
+import JanetKit
 import TOMLKit
+import CJanet
 
 struct ConfigMigrator {
     
@@ -22,7 +24,7 @@ struct ConfigMigrator {
             let matcherJanet = try janetForMatcher(ruleTable["match"])
             let transformJanet = try janetForSteps(ruleTable["steps"]?.array ?? TOMLArray())
             
-            output += "(defrule \"\(name)\" \(mode)\n"
+            output += "(defrule \(JanetVM.quoteString(name)) \(mode)\n"
             output += "  \(matcherJanet)\n"
             output += "  \(transformJanet))\n\n"
         }
@@ -43,7 +45,7 @@ struct ConfigMigrator {
                 return "(fn [s] (let [input s] \(j)))"
             }
             if let r = t["regex"]?.string {
-                return "(fn [s] (not (nil? (string/find \"\(r)\" s))))"
+                return "(fn [s] (not (nil? (string/find \(JanetVM.quoteString(r)) s))))"
             }
             if t["shell"] != nil {
                 return "# TODO: shell matcher — replace with a Janet predicate"
@@ -55,46 +57,41 @@ struct ConfigMigrator {
     }
     
     private static func janetForSteps(_ array: TOMLArray) throws -> String {
-        let steps: [(native: Bool, expr: String)] = try array.compactMap {
-            guard let s = try janetForStep($0.tomlValue) else { return nil }
-            return s
-        }
-        guard !steps.isEmpty else { throw MigrationError.missingValue("steps") }
+        // Each step is a Janet *body* that references `input` (the current
+        // value). We build a single `(fn [s] ...)` that threads `input` through
+        // every step: each `(let [input <prev>] BODY)` rebinds `input` to the
+        // previous step's result before evaluating the next body.
+        let bodies: [String] = try array.map { try janetForStep($0.tomlValue) }
+        guard !bodies.isEmpty else { throw MigrationError.missingValue("steps") }
 
-        // All native, single step: just the function name
-        if steps.count == 1, steps[0].native {
-            return steps[0].expr
+        var acc = "s"
+        for body in bodies {
+            acc = "(let [input \(acc)] \(body))"
         }
-
-        // Compose: apply each step in order, threading `input` through
-        if steps.allSatisfy({ $0.native }) {
-            let chain = steps.dropFirst().reduce(steps[0].expr) { "(\($1.expr) \($0))" }
-            return "(fn [s] \(chain))"
-        }
-
-        // Janet expressions need the (let [input s] ...) shim
-        let chain = steps.dropFirst().reduce(steps[0].expr) { "(let [input \($0)] \($1.expr))" }
-        return "(fn [s] (let [input s] \(chain)))"
+        return "(fn [s] \(acc))"
     }
-    
-    private static func janetForStep(_ toml: TOMLValue?) throws -> (native: Bool, expr: String)? {
-        guard let toml else { return nil }
+
+    /// Returns a Janet body expression that references `input` (the value being
+    /// processed by this step). The caller wraps it so `input` is bound to the
+    /// incoming value (or the previous step's output, when chaining).
+    private static func janetForStep(_ toml: TOMLValue?) throws -> String {
+        guard let toml else { throw MigrationError.unknownStep("missing step") }
         if let s = toml.string {
             switch s {
-            case "format_json":   return (true, "json/pretty")
-            case "jwt_payload":   return (true, "extract-jwt-body")
-            case "url_decode":    return (true, "string/percent-decode")
-            case "base64_decode": return (true, "base64/decode")
-            case "sort":
-                return (false, "(fn [s] (string/join (sort (string/split \"\\n\" s)) \"\\n\"))")
+            case "format_json":   return "(json/pretty input)"
+            case "jwt_payload":   return "(extract-jwt-body input)"
+            case "url_decode":    return "(string/percent-decode input)"
+            case "base64_decode": return "(base64/decode input)"
+            case "sort":          return "(string/join (sort (string/split \"\\n\" input)) \"\\n\")"
             default: throw MigrationError.unknownStep(s)
             }
         } else if let t = toml.table {
             if let j = t["janet"]?.string {
-                return (false, "(let [input s] \(j))")
+                // User Janet references `input` directly.
+                return j
             }
             if t["shell"] != nil {
-                return (false, "# TODO: shell step — replace with a Janet transform")
+                return "# TODO: shell step — replace with a Janet transform"
             }
             throw MigrationError.unknownStep("unknown table step")
         } else {

@@ -1,4 +1,4 @@
 #pragma once
 #include "janet.h"
 
-void janet_register_extensions(JanetTable *env);
+void clipfmt_defrule_cfun(JanetTable *env);
