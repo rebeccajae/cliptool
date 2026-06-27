@@ -147,6 +147,24 @@ import TOMLKit
         #expect(result.contains("TODO"))
     }
 
+    @Test func shellMigrationProducesValidJanet() throws {
+        // Regression: a shell matcher/step used to emit a bare `# TODO` line
+        // comment. The step's comment was spliced into `(let [input ...] ...))`
+        // and swallowed the closing parens, so the *entire* migrated file
+        // failed to parse. The placeholders must be valid no-op Janet.
+        let toml = #"""
+        [[rule]]
+        name = "Shell"
+        match = { shell = "true" }
+        steps = [{ shell = "cat" }]
+        when = "manual"
+        """#
+        let path = try writeTemp(toml)
+        let source = try ConfigMigrator.migrate(tomlPath: path)
+        let vm = try JanetVM()
+        _ = try vm.eval(source: source)  // must not throw
+    }
+
     @Test func regexWithQuoteIsEscaped() throws {
         let toml = #"""
         [[rule]]

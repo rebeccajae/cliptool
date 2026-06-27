@@ -14,9 +14,6 @@ final class ConfigWatcher {
     private let janet: JanetVM
     private let onChange: ([RegisteredRule]) -> Void
     private let onError: (String) -> Void
-    /// The most recent successfully-loaded ruleset, kept so a broken edit can
-    /// be reverted to it (see `load()`).
-    private var lastGoodRules: [RegisteredRule] = []
 
     init(
         path: String = ("~/.config/clipfmt/config.janet" as NSString).expandingTildeInPath,
@@ -134,14 +131,12 @@ final class ConfigWatcher {
                 _ = janet_gcunroot(rule.matcher)
                 _ = janet_gcunroot(rule.transform)
             }
-            lastGoodRules = RuleStorage.rules
             onChange(RuleStorage.rules)
         } catch {
             // Eval failed partway: drop the partial new rules and restore the
             // last good set so the app keeps working with what it had.
             RuleStorage.clear()
             RuleStorage.rules = snapshot  // already re-rooted above
-            lastGoodRules = snapshot
             onError("failed to load config: \(error)")
             onChange(RuleStorage.rules)
         }

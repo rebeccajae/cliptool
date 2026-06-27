@@ -120,6 +120,28 @@ extension Janet {
         #expect(try vm.callWithString(collectedRules[0].matcher, input: "x").asBool == true)
         #expect(try vm.callWithString(collectedRules[0].transform, input: "x").asString == "X")
     }
+
+    @Test func nonStringNameRaisesCatchableError() throws {
+        // A non-string name used to dereference a mistyped union and crash the
+        // host process. It must instead raise a catchable Janet error (which
+        // ConfigWatcher surfaces in the menu) and register nothing.
+        collectedRules = []
+        let vm = try JanetVM()
+        #expect(throws: JanetError.self) {
+            _ = try vm.eval(source: "(defrule 123 :always json/valid? json/pretty)")
+        }
+        #expect(collectedRules.isEmpty)
+    }
+
+    @Test func nonKeywordTriggerRaisesCatchableError() throws {
+        // A non-keyword trigger (e.g. a string) must raise rather than crash.
+        collectedRules = []
+        let vm = try JanetVM()
+        #expect(throws: JanetError.self) {
+            _ = try vm.eval(source: #"(defrule "X" "always" json/valid? json/pretty)"#)
+        }
+        #expect(collectedRules.isEmpty)
+    }
 }
 
 // MARK: - Integration

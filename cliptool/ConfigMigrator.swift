@@ -48,7 +48,13 @@ struct ConfigMigrator {
                 return "(fn [s] (not (nil? (string/find \(JanetVM.quoteString(r)) s))))"
             }
             if t["shell"] != nil {
-                return "# TODO: shell matcher — replace with a Janet predicate"
+                // A bare `# TODO` comment here would land in `defrule`'s
+                // matcher slot and either cause an arity error (comment eats
+                // the argument) or, for steps, swallow the closing parens and
+                // break the whole file's parse. Emit a valid no-op function
+                // instead, with the TODO on its own line so it can't eat the
+                // form that follows.
+                return "(fn [s] # TODO: shell matcher — replace with a Janet predicate\n             false)"
             }
             throw MigrationError.unknownMatcher("unknown table matcher")
         } else {
@@ -91,7 +97,11 @@ struct ConfigMigrator {
                 return j
             }
             if t["shell"] != nil {
-                return "# TODO: shell step — replace with a Janet transform"
+                // See janetForMatcher: the body is spliced into
+                // `(let [input ...] <body>)`, so it must be a balanced form.
+                // A bare comment would swallow the trailing `))` and break the
+                // parse. `(do ... nil)` is a valid body that yields nil.
+                return "(do # TODO: shell step — replace with a Janet transform\n     nil)"
             }
             throw MigrationError.unknownStep("unknown table step")
         } else {

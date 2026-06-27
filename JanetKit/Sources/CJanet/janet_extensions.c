@@ -8,8 +8,13 @@ extern void clipfmt_add_rule(int32_t mode, const char *name, Janet predicate, Ja
 
 static Janet defrule_cfun(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 4);
-    const char *name = (const char *)janet_unwrap_string(argv[0]);
-    const uint8_t *kw = janet_unwrap_keyword(argv[1]);
+    // Use the type-checking accessors so a malformed call (e.g. a non-string
+    // name or a non-keyword trigger) raises a catchable Janet error via
+    // janet_panic, instead of dereferencing a mistyped union and crashing the
+    // host process. The error propagates through janet_dostring/janet_pcall
+    // back to ConfigWatcher, which surfaces it in the menu.
+    const char *name = (const char *)janet_getstring(argv, 0);
+    JanetKeyword kw = janet_getkeyword(argv, 1);
     int32_t mode = janet_cstrcmp(kw, "always") ? 1 : 0;
     Janet matcher = argv[2];
     Janet transform = argv[3];

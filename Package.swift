@@ -13,6 +13,25 @@ let package = Package(
             name: "CliptoolTests",
             dependencies: ["JanetKit", "TOMLKit"],
             path: ".",
+            exclude: [
+                // The nested package has its own Package.swift; don't let SPM
+                // pull its sources into this target.
+                "JanetKit",
+                // Build artifacts (gitignored but present locally).
+                "cliptool.app",
+                "cliptool.zip",
+                // App-only sources intentionally not compiled into the test
+                // target (they pull in the full AppKit life-cycle).
+                "cliptool/AppDelegate.swift",
+                "cliptool/cliptoolApp.swift",
+                "cliptool/ClipboardMonitor.swift",
+                // App resources / non-Swift files that aren't test resources.
+                "cliptool/Assets.xcassets",
+                "cliptool/Info.plist",
+                "build.sh",
+                "ExportOptions.plist",
+                "README.md",
+            ],
             sources: [
                 "Tests/CliptoolTests/RuleEngineTests.swift",
                 "Tests/CliptoolTests/SnoozeStateTests.swift",
